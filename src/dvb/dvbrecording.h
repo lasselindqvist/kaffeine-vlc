@@ -62,7 +62,8 @@ public:
 	DvbRecordingModel(DvbManager *manager_, QObject *parent);
 	~DvbRecordingModel();
 
-	bool hasRecordings() const;
+    void setShutdown(int p_status);
+    bool hasRecordings() const;
 	bool hasActiveRecordings() const;
 	DvbSharedRecording findRecordingByKey(const SqlKey &sqlKey) const;
 	QMap<SqlKey, DvbSharedRecording> getRecordings() const;
@@ -70,7 +71,7 @@ public:
 	void updateRecording(DvbSharedRecording recording, DvbRecording &modifiedRecording);
 	void removeRecording(DvbSharedRecording recording);
 
-signals:
+    signals:
 	void recordingAdded(const DvbSharedRecording &recording);
 	// updating doesn't change the recording pointer (modifies existing content)
 	void recordingAboutToBeUpdated(const DvbSharedRecording &recording);
@@ -83,11 +84,13 @@ private:
 	void bindToSqlQuery(SqlKey sqlKey, QSqlQuery &query, int index) const;
 	bool insertFromSqlQuery(SqlKey sqlKey, const QSqlQuery &query, int index);
 	bool updateStatus(DvbRecording &recording);
+    void shutdownWhenEmpty();
 
 	DvbManager *manager;
 	QMap<SqlKey, DvbSharedRecording> recordings;
 	QMap<SqlKey, QExplicitlySharedDataPointer<DvbRecordingFile> > recordingFiles;
 	bool hasPendingOperation;
+    bool _shutdownWhenEmpty;
 };
 
 #endif /* DVBRECORDING_H */

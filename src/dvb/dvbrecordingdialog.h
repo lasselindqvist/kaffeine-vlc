@@ -40,6 +40,7 @@ private slots:
 	void newRecording();
 	void editRecording();
 	void removeRecording();
+    void setShutdown(int p_status);
 
 private:
 	DvbManager *manager;

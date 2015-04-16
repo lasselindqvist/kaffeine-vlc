@@ -25,6 +25,8 @@
 #include <QSet>
 #include <QVariant>
 #include <KStandardDirs>
+#include <QProcess>
+
 #include "../ensurenopendingoperation.h"
 #include "../log.h"
 #include "dvbdevice.h"
@@ -47,6 +49,8 @@ bool DvbRecording::validate()
 DvbRecordingModel::DvbRecordingModel(DvbManager *manager_, QObject *parent) : QObject(parent),
 	manager(manager_), hasPendingOperation(false)
 {
+    _shutdownWhenEmpty=false;
+
 	sqlInit(QLatin1String("RecordingSchedule"),
 		QStringList() << QLatin1String("Name") << QLatin1String("Channel") << QLatin1String("Begin") <<
 		QLatin1String("Duration") << QLatin1String("Repeat"));
@@ -117,6 +121,10 @@ DvbRecordingModel::~DvbRecordingModel()
 	}
 
 	sqlFlush();
+}
+void DvbRecordingModel::setShutdown(int p_status)
+{
+    _shutdownWhenEmpty=(p_status==Qt::Checked?true:false);
 }
 
 bool DvbRecordingModel::hasRecordings() const
@@ -189,7 +197,8 @@ void DvbRecordingModel::updateRecording(DvbSharedRecording recording,
 		recordingFiles.remove(*recording);
 		sqlRemove(*recording);
 		emit recordingRemoved(recording);
-		return;
+        shutdownWhenEmpty();
+        return;
 	}
 
 	emit recordingAboutToBeUpdated(recording);
@@ -215,7 +224,21 @@ void DvbRecordingModel::removeRecording(DvbSharedRecording recording)
 	recordings.remove(*recording);
 	recordingFiles.remove(*recording);
 	sqlRemove(*recording);
-	emit recordingRemoved(recording);
+    emit recordingRemoved(recording);
+    shutdownWhenEmpty();
+}
+void DvbRecordingModel::shutdownWhenEmpty()
+{
+    if (_shutdownWhenEmpty && !hasRecordings())
+    {
+        // Warning: use chmod +s if required
+        QProcess l_process;
+        QString l_stopCmd("/sbin/poweroff");
+        if (l_process.execute(l_stopCmd)<0)
+        {
+            Log("DvbRecordingModel::shutdownWhenEmpty:could not execute cmd");
+        }
+    }
 }
 
 void DvbRecordingModel::timerEvent(QTimerEvent *event)

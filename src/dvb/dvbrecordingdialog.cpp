@@ -76,7 +76,15 @@ DvbRecordingDialog::DvbRecordingDialog(DvbManager *manager_, QWidget *parent) : 
 	boxLayout->addWidget(pushButton);
 	boxLayout->addStretch();
 
-	QBoxLayout *mainLayout = new QVBoxLayout(widget);
+    // Adds shutdown option
+    action = new KAction(KIcon(QLatin1String("shutdown")), i18nc("@action", "Shutdown when empty"), widget);
+    treeView->addAction(action);
+    QCheckBox* l_cb = new QCheckBox(action->text(), widget);
+    connect(l_cb, SIGNAL(stateChanged(int)), this, SLOT(setShutdown(int)));
+    boxLayout->addWidget(l_cb);
+    boxLayout->addStretch();
+
+    QBoxLayout *mainLayout = new QVBoxLayout(widget);
 	mainLayout->addLayout(boxLayout);
 	mainLayout->addWidget(treeView);
 	setMainWidget(widget);
@@ -128,6 +136,11 @@ void DvbRecordingDialog::removeRecording()
 	foreach (const DvbSharedRecording &recording, recordings) {
 		recordingModel->removeRecording(recording);
 	}
+}
+void DvbRecordingDialog::setShutdown(int p_status)
+{
+    DvbRecordingModel *recordingModel = manager->getRecordingModel();
+    recordingModel->setShutdown(p_status);
 }
 
 void DvbRecordingLessThan::setSortOrder(SortOrder sortOrder_)
