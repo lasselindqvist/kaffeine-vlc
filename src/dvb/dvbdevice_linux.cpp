@@ -59,7 +59,7 @@ void DvbLinuxDevice::startDevice(const QString &deviceId_)
 	int fd = open(QFile::encodeName(frontendPath).constData(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
 
 	if (fd < 0) {
-		Log("DvbLinuxDevice::startDevice: cannot open frontend") << frontendPath;
+		Log("DvbLinuxDevice::startDevice: cannot open frontend") << QFile::encodeName(frontendPath).constData();
 		return;
 	}
 
@@ -839,6 +839,11 @@ void DvbLinuxDeviceManager::componentAdded(const QString &udi)
 	int index = dvbInterface->deviceIndex();
 	QString devicePath = dvbInterface->device();
 
+	// Fixes miscommunication between Solid and udev
+	QString l_dev_prefix("/dev/");
+	if (!devicePath.contains(l_dev_prefix))
+		devicePath=l_dev_prefix+devicePath;
+
 	if ((adapter < 0) || (adapter > 0x7fff) || (index < 0) || (index > 0x7fff)) {
 		Log("DvbLinuxDeviceManager::componentAdded: "
 		    "cannot determine adapter or index for device") << udi;
@@ -850,7 +855,6 @@ void DvbLinuxDeviceManager::componentAdded(const QString &udi)
 			udi;
 		return;
 	}
-
 	int deviceIndex = ((adapter << 16) | index);
 	DvbLinuxDevice *device = devices.value(deviceIndex);
 
@@ -996,7 +1000,8 @@ int DvbLinuxDeviceManager::readSysAttr(const QString &path)
 	}
 
 	bool ok = false;
-	int value = data.simplified().toInt(&ok, 0);
+	// assuming hexa info
+	int value = data.simplified().toInt(&ok, 16);
 
 	if (!ok || (value < 0) || (value > 0xffff)) {
 		return -1;
